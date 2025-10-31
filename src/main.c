@@ -17,11 +17,13 @@
 
 #define DEFAULT_STACK_SIZE 2048
 #define CDC_ITF_TX      1
+#define DEFAULT_I2C_SDA_PIN  12
+#define DEFAULT_I2C_SCL_PIN  13
 
 
 // Tehtävä 3: Tilakoneen esittely Add missing states.
 // Exercise 3: Definition of the state machine. Add missing states.
-enum state { WAITING=1};
+enum state { WAITING=1, DATA_READY };
 enum state programState = WAITING;
 
 // Tehtävä 3: Valoisuuden globaali muuttuja
@@ -40,20 +42,24 @@ static void btn_fxn(uint gpio, uint32_t eventMask) {
 
 static void sensor_task(void *arg){
     (void)arg;
+
+    init_veml6030();
     // Tehtävä 2: Alusta valoisuusanturi. Etsi SDK-dokumentaatiosta sopiva funktio.
     // Exercise 2: Init the light sensor. Find in the SDK documentation the adequate function.
    
     for(;;){
         
+        uint32_t lux = veml6030_read_light();
+
+        char buf[64];
+        unsigned long ts = (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS);
+        snprintf(buf, sizeof(buf), "%lu,%u\n", ts, (unsigned)lux);
+        printf("%s", buf);
         // Tehtävä 2: Muokkaa tästä eteenpäin sovelluskoodilla. Kommentoi seuraava rivi.
-        //             
+        //           
         // Exercise 2: Modify with application code here. Comment following line.
         //             Read sensor data and print it out as string; 
         tight_loop_contents(); 
-
-
-   
-
 
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
@@ -71,8 +77,8 @@ static void sensor_task(void *arg){
         
         // Exercise 2. Just for sanity check. Please, comment this out
         // Tehtävä 2: Just for sanity check. Please, comment this out
-        printf("sensorTask\n");
-
+        //printf("sensorTask\n");
+        printf("Lux: %u\n", (unsigned)lux);
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
