@@ -573,7 +573,7 @@ uint32_t veml6030_read_light() {
     //            Tee tarvittavat bittikohtaiset operaatiot tallettaksesi tuloksen 16-bittiseen rekisteriin.
     //            Kerro arvo sopivalla kertoimella huomioiden 100 ms integraatioaika ja vahvistus 1/8
     //            käyttäen VEML6030-sovellussuunnitteluasiakirjan sivun 5 tietoja:https://www.vishay.com/docs/84367/designingveml6030.pdf
-    //            Lopuksi tallenna arvo muuttujaan luxVal_uncorrected.
+    //            Lopuksi tallenna arvo muuttujaan luxVal_uncit orrected.
   
    
     if (luxVal_uncorrected>1000){
@@ -604,7 +604,7 @@ static uint16_t _veml6030_read_register(uint8_t reg) {
 
 void veml6030_stop(){
     uint8_t config[3] = {
-        VEML6030_CONFIG_REG,  // Configuration register
+        // VEML6030_CONFIG_REG,  // Configuration register
         0x00,                 // High byte: Gain 1/8 (00), reserved bits
         0x11                  // Low byte: 100ms integration time (010 in bits 6-8), power on (bit 0 = 0). Power off (last bit to 1)
     };
