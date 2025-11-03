@@ -106,7 +106,7 @@ static void print_task(void *arg){
         // Exercise 3: Print out sensor data as string to debug window if the state is correct
         //             Remember to modify state
         //             Do not forget to comment next line of code.
-        //tight_loop_contents();
+        tight_loop_contents();
         
 
 
@@ -132,8 +132,13 @@ static void print_task(void *arg){
 
         // Exercise 3. Just for sanity check. Please, comment this out
         // Tehtävä 3: Just for sanity check. Please, comment this out
+<<<<<<< Updated upstream
         //printf("printTask\n");
         printf("Lux: %u\n", (unsigned)ambientLight);
+=======
+        printf("printTask\n");
+        
+>>>>>>> Stashed changes
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
