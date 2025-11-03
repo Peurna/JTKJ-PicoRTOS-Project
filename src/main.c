@@ -51,15 +51,19 @@ static void sensor_task(void *arg){
         
         uint32_t lux = veml6030_read_light();
 
-        char buf[64];
+        if(programState == WAITING) {
+            ambientLight = lux;
+            programState = DATA_READY;
+        }
+        /*char buf[64];
         unsigned long ts = (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS);
         snprintf(buf, sizeof(buf), "%lu,%u\n", ts, (unsigned)lux);
-        printf("%s", buf);
+        printf("%s", buf); */
         // Tehtävä 2: Muokkaa tästä eteenpäin sovelluskoodilla. Kommentoi seuraava rivi.
         //           
         // Exercise 2: Modify with application code here. Comment following line.
         //             Read sensor data and print it out as string; 
-        tight_loop_contents(); 
+        //tight_loop_contents(); 
 
         // Tehtävä 3:  Muokkaa aiemmin Tehtävässä 2 tehtyä koodia ylempänä.
         //             Jos olet oikeassa tilassa, tallenna anturin arvo tulostamisen sijaan
@@ -78,7 +82,6 @@ static void sensor_task(void *arg){
         // Exercise 2. Just for sanity check. Please, comment this out
         // Tehtävä 2: Just for sanity check. Please, comment this out
         //printf("sensorTask\n");
-        printf("Lux: %u\n", (unsigned)lux);
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -88,14 +91,21 @@ static void print_task(void *arg){
     (void)arg;
     
     while(1){
-        
+        if(programState = DATA_READY) {
+            char buf[64];
+            unsigned long ts = (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS);
+            snprintf(buf, sizeof(buf), "%lu,%u\n", ts, (unsigned)ambientLight);
+            printf("%s", buf); 
+
+            programState = WAITING;
+        }
         // Tehtävä 3: Kun tila on oikea, tulosta sensoridata merkkijonossa debug-ikkunaan
         //            Muista tilamuutos
         //            Älä unohda kommentoida seuraavaa koodiriviä.
         // Exercise 3: Print out sensor data as string to debug window if the state is correct
         //             Remember to modify state
         //             Do not forget to comment next line of code.
-        tight_loop_contents();
+        //tight_loop_contents();
         
 
 
@@ -121,7 +131,7 @@ static void print_task(void *arg){
 
         // Exercise 3. Just for sanity check. Please, comment this out
         // Tehtävä 3: Just for sanity check. Please, comment this out
-        printf("printTask\n");
+        //printf("printTask\n");
         
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
