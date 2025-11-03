@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <queue.h>
 
 #include <pico/stdlib.h>
 
@@ -26,10 +27,11 @@
 enum state { WAITING, DATA_READY };
 enum state programState = WAITING;
 
-uint32_t morseCode[];
+uint32_t currentMorseSequence[];
 // Tehtävä 3: Valoisuuden globaali muuttuja
 // Exercise 3: Global variable for ambient light
 uint32_t ambientLight;
+QueueHandle_t inputQueue;
 
 static void btn_fxn(uint gpio, uint32_t eventMask) {
 
@@ -39,6 +41,19 @@ static void btn_fxn(uint gpio, uint32_t eventMask) {
     //            Tarkista SDK, ja jos et löydä vastaavaa funktiota, sinun täytyy toteuttaa se itse.
     // Exercise 1: Toggle the LED. 
     //             Check the SDK and if you do not find a function you would need to implement it yourself. 
+}
+static void btn_1_dot(uint gpio, uint32_t eventMask) {
+    char dot = ".";
+    xQueueSendFromISR(inputQueue, %dot, NULL);
+    toggle_red_led();
+    toggle_buzzer();
+}
+
+static void btn_2_dash(uint gpio, uint32_t eventMask) {
+    char dash = "_";
+    xQueueSendFromISR(inputQueue, %dash, NULL);
+    toggle_red_led();
+    toggle_buzzer();
 }
 
 static void sensor_task(void *arg){
@@ -183,10 +198,14 @@ int main() {
 
     init_display();
 
+<<<<<<< Updated upstream
     
 
+=======
+>>>>>>> Stashed changes
     init_red_led();
-    gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, btn_fxn);
+    gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, btn_1_dot);
+    gpio_set_irq_enabled_with_callback(BUTTON2, GPIO_IRQ_EDGE_FALL, true, btn_2_dash);
 
     // Exercise 1: Initialize the button and the led and define an register the corresponding interrupton.
     //             Interruption handler is defined up as btn_fxn
