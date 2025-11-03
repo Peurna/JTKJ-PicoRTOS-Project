@@ -23,9 +23,10 @@
 
 // Tehtävä 3: Tilakoneen esittely Add missing states.
 // Exercise 3: Definition of the state machine. Add missing states.
-enum state { WAITING=1, DATA_READY };
+enum state { WAITING, DATA_READY };
 enum state programState = WAITING;
 
+uint32_t morseCode[];
 // Tehtävä 3: Valoisuuden globaali muuttuja
 // Exercise 3: Global variable for ambient light
 uint32_t ambientLight;
@@ -132,7 +133,7 @@ static void print_task(void *arg){
         // Exercise 3. Just for sanity check. Please, comment this out
         // Tehtävä 3: Just for sanity check. Please, comment this out
         //printf("printTask\n");
-        
+        printf("Lux: %u\n", (unsigned)ambientLight);
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -177,6 +178,13 @@ int main() {
     sleep_ms(300); //Wait some time so initialization of USB and hat is done.
 
     init_sw1();
+    init_sw2();
+
+    init_display();
+
+    init_ICM42670();
+    ICM42670_start_with_default_values();
+
     init_red_led();
     gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, btn_fxn);
 
