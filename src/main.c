@@ -55,6 +55,7 @@ static void sensor_task(void *arg){
         if(programState == WAITING) {
             ambientLight = lux;
             programState = DATA_READY;
+
         }
         /*char buf[64];
         unsigned long ts = (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS);
@@ -99,6 +100,7 @@ static void print_task(void *arg){
             printf("%s", buf); 
 
             programState = WAITING;
+            
         }
         // Tehtävä 3: Kun tila on oikea, tulosta sensoridata merkkijonossa debug-ikkunaan
         //            Muista tilamuutos
@@ -132,13 +134,7 @@ static void print_task(void *arg){
 
         // Exercise 3. Just for sanity check. Please, comment this out
         // Tehtävä 3: Just for sanity check. Please, comment this out
-<<<<<<< Updated upstream
         //printf("printTask\n");
-        printf("Lux: %u\n", (unsigned)ambientLight);
-=======
-        printf("printTask\n");
-        
->>>>>>> Stashed changes
         // Do not remove this
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -173,9 +169,9 @@ int main() {
     stdio_init_all();
 
     // Uncomment this lines if you want to wait till the serial monitor is connected
-    /*while (!stdio_usb_connected()){
+    while (!stdio_usb_connected()){
         sleep_ms(10);
-    }*/ 
+    }
     
     init_hat_sdk();
 
@@ -187,8 +183,7 @@ int main() {
 
     init_display();
 
-    init_ICM42670();
-    ICM42670_start_with_default_values();
+    
 
     init_red_led();
     gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, btn_fxn);
