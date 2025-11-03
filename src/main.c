@@ -91,7 +91,7 @@ static void print_task(void *arg){
     (void)arg;
     
     while(1){
-        if(programState = DATA_READY) {
+        if(programState == DATA_READY) {
             char buf[64];
             unsigned long ts = (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS);
             snprintf(buf, sizeof(buf), "%lu,%u\n", ts, (unsigned)ambientLight);
