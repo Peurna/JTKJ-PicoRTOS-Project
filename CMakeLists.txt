@@ -42,6 +42,7 @@ project(${APP_NAME} C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
+# Lataa pico-debug-kirjasto (joka sisältää usb_serial.h)
 
 # =================================================================================================
 
@@ -121,6 +122,7 @@ target_link_libraries(${MAIN_TARGET}
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap4
         TKJHAT_SDK
+
 )
 
 # Include libraries necessaries to control the WiFi. If you are using the internal pico LED in W model, it is also 
@@ -128,6 +130,7 @@ target_link_libraries(${MAIN_TARGET}
 if (PICO_CYW43_SUPPORTED)
     target_link_libraries(${MAIN_TARGET} pico_cyw43_arch_none)
 endif()
+
 
 #Support for stdio (printf, fwrite, puts...) via usb or UART. 
 pico_enable_stdio_usb(${MAIN_TARGET} 1)
