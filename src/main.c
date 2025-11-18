@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <queue.h>
-
 #include <pico/stdlib.h>
 #include "tusb.h"
 #include <FreeRTOS.h>
@@ -41,12 +39,13 @@ const MorseMapEntry morse_map[] = {
     {"-....-", '-'}, {".--.-.", '@'},
     {NULL, '\0'}
 };
+
  static void Button(uint gpio, uint32_t events) {
     char button_char = 0;
 
     if (gpio == BUTTON1) {
         button_char = '.';
-    } if else(gpio == BUTTON2) {
+    } else if(gpio == BUTTON2) {
         button_char = '-';
     }
     xQueueSendFromISR(inputQueue, &button_char, NULL);
