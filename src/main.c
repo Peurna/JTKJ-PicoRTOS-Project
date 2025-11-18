@@ -11,6 +11,10 @@
 #define DEFAULT_STACK_SIZE 2048
 #define CDC_ITF_TX      1
 #define MORSE_MAX_LEN 64
+#define MESSAGE_MAX_LEN 128
+
+extern void clear_display();
+extern void write_text_xy(int16_t x0, int16_t y0, const char *text);
 
 enum state { STATE_INPUT, STATE_TRANSLATE, STATE_DISPLAY};
 enum state programState = STATE_INPUT;
@@ -18,7 +22,6 @@ enum state programState = STATE_INPUT;
 char translatedMessage[MESSAGE_MAX_LEN] = "";
 char currentMorseSequence[MORSE_MAX_LEN] = "";
 QueueHandle_t inputQueue;
-int consecutiveSpaces = 0;
 
 typedef struct {
     const char *morse;
@@ -37,9 +40,10 @@ const MorseMapEntry morse_map[] = {
     {".....", '5'}, {"-....", '6'}, {"--...", '7'}, {"---..", '8'},
     {"----.", '9'}, {"-----", '0'},
     {".-.-.-", '.'}, {"--..--", ','}, {"..--..", '?'}, {"-.-.--", '!'},
-    {"-....-", '-'}, {".--.-.", '@'}, {"", ' '},
-    {NULL, '\0'}
+    {"-....-", '-'}, {".--.-.", '@'}, {NULL, '\0'}
 };
+
+
 
  static void Button(uint gpio, uint32_t events) {
     char button_char = 0;
@@ -77,10 +81,7 @@ static void InputTask(void *arg) {
                     
                     snprintf(buf, sizeof(buf), "Sekvenssi: %s\n", currentMorseSequence);
                     printf("%s", buf);
-                } else {
-                    printf("Sekvenssi on täynnä!\n");
-                }
-
+                } 
             }
         }
 
@@ -111,7 +112,7 @@ static void InputTask(void *arg) {
                     
                     if (len < MORSE_MAX_LEN - 3) {
                         strcat(currentMorseSequence, "___");                       
-                        printf("Sekvenssi: %s\n", currentMorseSequence);
+                        programState = STATE_TRANSLATE;
                         
                         buzzer_play_tone(700, 80); 
                         vTaskDelay(pdMS_TO_TICKS(100));
@@ -143,7 +144,7 @@ static void TranslateTask(void *arg) {
             }
 
             if (singleChar != '\0') {
-                printf("Käännetty merkiksi: %c\n", translatedChar);
+                printf("Käännetty merkiksi: %c\n", singleChar);
             } else {
                 printf("Virhe: Tuntematon morse-sekvenssi: %s\n", currentMorseSequence);
                 // Asetetaan virhemerkki näytettäväksi
