@@ -26,12 +26,36 @@
 enum state { STATE_INPUT, STATE_TRANSLATE, STATE_DISPLAY};
 enum state programState = STATE_INPUT;
 
+char translatedChar = '\0';
+char displayBuffer[2] = "";
 char currentMorseSequence[MORSE_MAX_LEN] = "";
 // Tehtävä 3: Valoisuuden globaali muuttuja
 // Exercise 3: Global variable for ambient light
 uint32_t ambientLight = 0;
 QueueHandle_t inputQueue;
 
+
+
+typedef struct {
+    const char *morse;
+    char character;
+} MorseMapEntry;
+
+const MorseMapEntry morse_map[] = {
+    {".-", 'A'}, {"-...", 'B'}, {"-.-.", 'C'}, {"-..", 'D'},
+    {".", 'E'}, {"..-.", 'F'}, {"--.", 'G'}, {"....", 'H'},
+    {"..", 'I'}, {".---", 'J'}, {"-.-", 'K'}, {".-..", 'L'},
+    {"--", 'M'}, {"-.", 'N'}, {"---", 'O'}, {".--.", 'P'},
+    {"--.-", 'Q'}, {".-.", 'R'}, {"...", 'S'}, {"-", 'T'},
+    {"..-", 'U'}, {"...-", 'V'}, {".--", 'W'}, {"-..-", 'X'},
+    {"-.--", 'Y'}, {"--..", 'Z'},
+    {".----", '1'}, {"..---", '2'}, {"...--", '3'}, {"....-", '4'},
+    {".....", '5'}, {"-....", '6'}, {"--...", '7'}, {"---..", '8'},
+    {"----.", '9'}, {"-----", '0'},
+    {".-.-.-", '.'}, {"--..--", ','}, {"..--..", '?'}, {"-.-.--", '!'},
+    {"-....-", '-'}, {".--.-.", '@'},
+    {NULL, '\0'}
+};
 /*static void btn_fxn(uint gpio, uint32_t eventMask) {
 
     toggle_red_led();
@@ -97,7 +121,38 @@ static void InputTask(void *arg) {
 static void TranslateTask(void *arg) {
     (void)arg;
     for (;;) {
-        // TODO: implement translation state machine
+        if (programState == STATE_TRANSLATE) {
+            translatedChar = '\0';
+            
+            printf("Aloitetaan käännös sekvenssille: %s\n", currentMorseSequence);
+
+            for (int i = 0; morse_map[i].morse != NULL; i++) {
+                if (strcmp(currentMorseSequence, morse_map[i].morse) == 0) {
+                    translatedChar = morse_map[i].character;
+                    break;
+                }
+            }
+
+            if (translatedChar != '\0') {
+                printf("Käännetty merkiksi: %c\n", translatedChar);
+                // Valmistellaan merkin näyttöbuffaus
+                displayBuffer[0] = translatedChar;
+                displayBuffer[1] = '\0';
+            } else {
+                printf("Virhe: Tuntematon morse-sekvenssi: %s\n", currentMorseSequence);
+                // Asetetaan virhemerkki näytettäväksi
+                translatedChar = '?';
+                displayBuffer[0] = '?';
+                displayBuffer[1] = '\0';
+            }
+
+            // Nollataan sekvenssi seuraavaa merkkiä varten
+            currentMorseSequence[0] = '\0';
+
+            // Siirry näytötilaan
+            programState = STATE_DISPLAY;
+        }
+        
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 }
@@ -105,6 +160,9 @@ static void TranslateTask(void *arg) {
 static void DisplayTask(void *arg) {
     (void)arg;
     for (;;) {
+        if (programState == STATE_DISPLAY) {
+            programState = STATE_INPUT; 
+        }
         // TODO: implement display / sending of CSV (timestamp, luminance)
         vTaskDelay(pdMS_TO_TICKS(200));
     }
