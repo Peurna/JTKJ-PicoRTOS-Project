@@ -15,10 +15,10 @@
 enum state { STATE_INPUT, STATE_TRANSLATE, STATE_DISPLAY};
 enum state programState = STATE_INPUT;
 
-char translatedChar = '\0';
-char displayBuffer[2] = "";
+char translatedMessage[MESSAGE_MAX_LEN] = "";
 char currentMorseSequence[MORSE_MAX_LEN] = "";
 QueueHandle_t inputQueue;
+int consecutiveSpaces = 0;
 
 typedef struct {
     const char *morse;
@@ -37,7 +37,7 @@ const MorseMapEntry morse_map[] = {
     {".....", '5'}, {"-....", '6'}, {"--...", '7'}, {"---..", '8'},
     {"----.", '9'}, {"-----", '0'},
     {".-.-.-", '.'}, {"--..--", ','}, {"..--..", '?'}, {"-.-.--", '!'},
-    {"-....-", '-'}, {".--.-.", '@'},
+    {"-....-", '-'}, {".--.-.", '@'}, {"", ' '},
     {NULL, '\0'}
 };
 
@@ -128,30 +128,34 @@ static void InputTask(void *arg) {
 }
 static void TranslateTask(void *arg) {
     (void)arg;
+    char singleChar = '\0';
     for (;;) {
         if (programState == STATE_TRANSLATE) {
-            translatedChar = '\0';
+            singleChar = '\0';
             
             printf("Aloitetaan käännös sekvenssille: %s\n", currentMorseSequence);
 
             for (int i = 0; morse_map[i].morse != NULL; i++) {
                 if (strcmp(currentMorseSequence, morse_map[i].morse) == 0) {
-                    translatedChar = morse_map[i].character;
+                    singleChar = morse_map[i].character;
                     break;
                 }
             }
 
-            if (translatedChar != '\0') {
+            if (singleChar != '\0') {
                 printf("Käännetty merkiksi: %c\n", translatedChar);
-                // Valmistellaan merkin näyttöbuffaus
-                displayBuffer[0] = translatedChar;
-                displayBuffer[1] = '\0';
             } else {
                 printf("Virhe: Tuntematon morse-sekvenssi: %s\n", currentMorseSequence);
                 // Asetetaan virhemerkki näytettäväksi
-                translatedChar = '?';
-                displayBuffer[0] = '?';
-                displayBuffer[1] = '\0';
+                singleChar = '?';
+            }
+            int msg_len = strlen(translatedMessage);
+            if (msg_len < MESSAGE_MAX_LEN - 1) {
+                translatedMessage[msg_len] = singleChar;
+                translatedMessage[msg_len + 1] = '\0';
+                printf("Käännetty viesti: %s\n", translatedMessage);
+            } else {
+                printf("Huom Viestipuskuri täynnä\n");
             }
 
             currentMorseSequence[0] = '\0';
