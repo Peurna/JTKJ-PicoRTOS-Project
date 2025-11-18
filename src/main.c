@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <pico/stdlib.h>
 #include "tusb.h"
 #include <FreeRTOS.h>
@@ -57,6 +58,8 @@ static void InputTask(void *arg) {
     char receivedChar;
     char buf[128];
     float ax, ay, az, gx, gy, gz, t;
+    const float TILT_THRESHOLD = 0.7f;
+    const float RESET_THRESHOLD = 0.5f;
     bool motion_action_taken = false;
     buzzer_play_tone(440, 100);
 
@@ -80,24 +83,49 @@ static void InputTask(void *arg) {
 
             }
         }
-        motion_action_taken = false;
-    }
 
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
             
-            // TÄHÄN TULEE MYÖHEMMIN: Logiikka, joka tarkistaa kallistuksen
-            //
-            // Esim:
-            // if (ay > 0.8f) { // Kallistus eteen
-            //    usb_serial_print("Kallistus havaittu (lisää välilyönti)\n");
-            // }
-            // if (az < -0.8f) { // Kallistus "ylös"
-            //    usb_serial_print("Kallistus ylös (lähetä viesti)\n");
-            // }
+            if (fabs(ax) < RESET_THRESHOLD && fabs(ay) < RESET_THRESHOLD) {
+                motion_action_taken = false;
+            }
+
+            if (!motion_action_taken && programState == STATE_INPUT) {
+
+                if (ax > TILT_THRESHOLD) {
+                    int len = strlen(currentMorseSequence);
+                    if (len < MORSE_MAX_LEN - 1) {
+                        currentMorseSequence[len] = '_';
+                        currentMorseSequence[len + 1] = '\0';
+                        
+                        printf("Sekvenssi: %s\n", currentMorseSequence);
+                        
+                        buzzer_play_tone(600, 150); 
+                    }
+                    motion_action_taken = true;
+                }
+
+
+                else if (ax < -TILT_THRESHOLD) {
+                    int len = strlen(currentMorseSequence);
+                    
+                    if (len < MORSE_MAX_LEN - 3) {
+                        strcat(currentMorseSequence, "___");                       
+                        printf("Sekvenssi: %s\n", currentMorseSequence);
+                        
+                        buzzer_play_tone(700, 80); 
+                        vTaskDelay(pdMS_TO_TICKS(100));
+                        buzzer_play_tone(700, 80);
+                    }
+                    motion_action_taken = true;
+                }
+            }
+            
         }
+
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
-
-
+}
 static void TranslateTask(void *arg) {
     (void)arg;
     for (;;) {
