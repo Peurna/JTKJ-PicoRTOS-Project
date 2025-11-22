@@ -43,8 +43,6 @@ const MorseMapEntry morse_map[] = {
     {"-....-", '-'}, {".--.-.", '@'}, {NULL, '\0'}
 };
 
-
-
  static void Button(uint gpio, uint32_t events) {
     char button_char = 0;
 
@@ -60,7 +58,6 @@ const MorseMapEntry morse_map[] = {
 static void InputTask(void *arg) {
 (void)arg;
     char receivedChar;
-    char buf[128];
     float ax, ay, az, gx, gy, gz, t;
     const float TILT_THRESHOLD = 0.7f;
     const float RESET_THRESHOLD = 0.5f;
@@ -70,7 +67,6 @@ static void InputTask(void *arg) {
     for (;;) { 
 
         if (xQueueReceive(inputQueue, &receivedChar, pdMS_TO_TICKS(50)) == pdPASS) {
-
             if (programState == STATE_INPUT) {
                 buzzer_play_tone(880, 50);
                 int len = strlen(currentMorseSequence);
@@ -78,9 +74,6 @@ static void InputTask(void *arg) {
                 if (len < MORSE_MAX_LEN - 1) {
                     currentMorseSequence[len] = receivedChar;
                     currentMorseSequence[len + 1] = '\0';
-                    
-                    snprintf(buf, sizeof(buf), "Sekvenssi: %s\n", currentMorseSequence);
-                    printf("%s", buf);
                 } 
             }
         }
@@ -95,12 +88,10 @@ static void InputTask(void *arg) {
 
                 if (ax > TILT_THRESHOLD) {
                     int len = strlen(currentMorseSequence);
+
                     if (len < MORSE_MAX_LEN - 1) {
                         currentMorseSequence[len] = '_';
-                        currentMorseSequence[len + 1] = '\0';
-                        
-                        printf("Sekvenssi: %s\n", currentMorseSequence);
-                        
+                        currentMorseSequence[len + 1] = '\0';                        
                         buzzer_play_tone(600, 150); 
                     }
                     motion_action_taken = true;
@@ -129,13 +120,12 @@ static void InputTask(void *arg) {
 }
 static void TranslateTask(void *arg) {
     (void)arg;
-    char singleChar = '\0';
+    char singleChar;
+
     for (;;) {
         if (programState == STATE_TRANSLATE) {
             singleChar = '\0';
             
-            printf("Aloitetaan käännös sekvenssille: %s\n", currentMorseSequence);
-
             for (int i = 0; morse_map[i].morse != NULL; i++) {
                 if (strcmp(currentMorseSequence, morse_map[i].morse) == 0) {
                     singleChar = morse_map[i].character;
@@ -147,7 +137,6 @@ static void TranslateTask(void *arg) {
                 printf("Käännetty merkiksi: %c\n", singleChar);
             } else {
                 printf("Virhe: Tuntematon morse-sekvenssi: %s\n", currentMorseSequence);
-                // Asetetaan virhemerkki näytettäväksi
                 singleChar = '?';
             }
             int msg_len = strlen(translatedMessage);
@@ -171,6 +160,11 @@ static void DisplayTask(void *arg) {
     (void)arg;
     for (;;) {
         if (programState == STATE_DISPLAY) {
+            clear_display();
+            write_text_xy(0, 0, translatedMessage);
+            vTaskDelay(pdMS_TO_TICKS(10000))
+            translatedMessage[0] = '\0';
+            currentMorseSequence[0] = '\0';
             programState = STATE_INPUT; 
         }
         vTaskDelay(pdMS_TO_TICKS(200));
@@ -178,10 +172,8 @@ static void DisplayTask(void *arg) {
 }
 
 int main() {
-
     stdio_init_all();
     sleep_ms(2000); 
-    printf("--- Ohjelma käynnistyy ---\n");
 
     init_hat_sdk();
     sleep_ms(300); 
@@ -190,44 +182,13 @@ int main() {
     init_sw2();
     init_red_led();
     init_buzzer();
+    extern void init_display();
     init_display();
 
-    if (init_ICM42670() != 0) {
-        printf("IMU-anturin alustus epäonnistui! PYSÄHDETTY.\n");
-        while(1);
-    }
     ICM42670_start_with_default_values();
-    printf("Laitteisto alustettu.\n");
 
     gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, Button);
     gpio_set_irq_enabled(BUTTON2, GPIO_IRQ_EDGE_FALL, true);
-
-    inputQueue = xQueueCreate(10, sizeof(char));
-    if (inputQueue == NULL) {
-        printf("Jonon (queue) luonti epäonnistui! PYSÄHDETTY.\n");
-        while(1);
-    }
-    printf("Jono luotu.\n");
-
-    TaskHandle_t hInput, hTranslate, hDisplay;
-    BaseType_t result;
-
-    result = xTaskCreate(InputTask, "Input", DEFAULT_STACK_SIZE, NULL, 2, &hInput);
-    if (result != pdPASS) {
-        printf("InputTaskin luonti epäonnistui!\n");
-    }
-
-    result = xTaskCreate(TranslateTask, "Translate", DEFAULT_STACK_SIZE, NULL, 2, &hTranslate);
-    if (result != pdPASS) {
-        printf("TranslateTaskin luonti epäonnistui!\n");
-    }
-
-    result = xTaskCreate(DisplayTask, "Display", DEFAULT_STACK_SIZE, NULL, 2, &hDisplay);
-    if (result != pdPASS) {
-        printf("DisplayTaskin luonti epäonnistui!\n");
-    }
-
-    printf("Kaikki taskit luotu.\n");
 
     vTaskStartScheduler();
 
