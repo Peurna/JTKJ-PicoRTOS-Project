@@ -12,7 +12,8 @@
 #define CDC_ITF_TX      1
 #define MORSE_MAX_LEN 64
 #define MESSAGE_MAX_LEN 128
-
+// We are aiming for grade 1 and level 1
+// Point sharing: 2 points to Eemil, 2 points to Santtu and 2 points for Joonas.
 extern void write_text_xy(int16_t x0, int16_t y0, const char *text);
 
 enum state { STATE_INPUT, STATE_TRANSLATE, STATE_DISPLAY};
@@ -45,18 +46,18 @@ const MorseMapEntry morse_map[] = { // Global list which operates as a databank 
 static void Button(uint gpio, uint32_t events) {
     char button_char = 0;
 
-    if (gpio == BUTTON1) {
+    if (gpio == BUTTON1) { // Checks which GPIO pin was triggered and then assigness the character
         button_char = '.';
     } else if(gpio == BUTTON2) {
         button_char = '-';
     }
-    xQueueSendFromISR(inputQueue, &button_char, NULL);
-    toggle_red_led();
+    xQueueSendFromISR(inputQueue, &button_char, NULL); // Send the character to the queue from the ISR
+    toggle_red_led(); // Red led to show the button has been pressed
  }
 
 static void InputTask(void *arg) {
 (void)arg;
-    char receivedChar;
+    char receivedChar; // Local variables that are needed for the function
     char buf[128];
     float ax, ay, az, gx, gy, gz, t;
     const float TILT_THRESHOLD = 0.5f;
@@ -66,16 +67,16 @@ static void InputTask(void *arg) {
 
     for (;;) { 
 
-        if (xQueueReceive(inputQueue, &receivedChar, pdMS_TO_TICKS(50)) == pdPASS) {
-            if (programState == STATE_INPUT) {
+        if (xQueueReceive(inputQueue, &receivedChar, pdMS_TO_TICKS(50)) == pdPASS) { // Waits for a character from the inputQueue
+            if (programState == STATE_INPUT) { // Only when in correct state will the next line of code run
                 buzzer_play_tone(880, 50);
                 int len = strlen(currentMorseSequence);
 
-                if (len < MORSE_MAX_LEN - 1) {
-                    currentMorseSequence[len] = receivedChar;
-                    currentMorseSequence[len + 1] = '\0';
+                if (len < MORSE_MAX_LEN - 1) { 
+                    currentMorseSequence[len] = receivedChar; // Assigns the character to correct position in line
+                    currentMorseSequence[len + 1] = '\0'; // After that we need to assign \0 again because receivedChar took the spot
 
-                    snprintf(buf, sizeof(buf), "Sekvenssi: %s\n", currentMorseSequence);
+                    snprintf(buf, sizeof(buf), "Sekvenssi: %s\n", currentMorseSequence); // Printing sequence for debugging
                     printf("%s", buf);
                 } 
             }
@@ -186,22 +187,22 @@ int main() {
     init_buzzer();
     init_display();
 
-    clear_display();
+    clear_display(); // Clearing the display to ensure clean start state
 
     ICM42670_start_with_default_values();
 
-    inputQueue = xQueueCreate(10, sizeof(char));
+    inputQueue = xQueueCreate(10, sizeof(char)); // Createng a FreeRTOS queue to hold characters
     if (inputQueue == NULL) {
         printf("Jonon luonti epäonnistui!\n");
         while(1);
     }
-
-    xTaskCreate(InputTask, "Input", 2048, NULL, 2, NULL);
+    // Priorities: InputTask is higher (2) to ensure responsive button/sensor handling
+    xTaskCreate(InputTask, "Input", 2048, NULL, 2, NULL); 
     xTaskCreate(TranslateTask, "Translate", 2048, NULL, 1, NULL);
     xTaskCreate(DisplayTask, "Display", 2048, NULL, 1, NULL);
-
-    gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, Button);
-    gpio_set_irq_enabled(BUTTON2, GPIO_IRQ_EDGE_FALL, true);
+    // Setup GPIO interrupts for buttons
+    gpio_set_irq_enabled_with_callback(BUTTON1, GPIO_IRQ_EDGE_FALL, true, Button); // Register Button as the callback function for falling edge events
+    gpio_set_irq_enabled(BUTTON2, GPIO_IRQ_EDGE_FALL, true); 
 
     vTaskStartScheduler();
 
