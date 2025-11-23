@@ -42,7 +42,7 @@ const MorseMapEntry morse_map[] = { // Global list which operates as a databank 
     {"-....-", '-'}, {".--.-.", '@'}, {NULL, '\0'}
 };
 
- static void Button(uint gpio, uint32_t events) {
+static void Button(uint gpio, uint32_t events) {
     char button_char = 0;
 
     if (gpio == BUTTON1) {
@@ -59,7 +59,7 @@ static void InputTask(void *arg) {
     char receivedChar;
     char buf[128];
     float ax, ay, az, gx, gy, gz, t;
-    const float TILT_THRESHOLD = 0.7f;
+    const float TILT_THRESHOLD = 0.5f;
     const float RESET_THRESHOLD = 0.5f;
     bool motion_action_taken = false;
     buzzer_play_tone(440, 100);
@@ -81,36 +81,36 @@ static void InputTask(void *arg) {
             }
         }
 
-        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
+        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) { //tests that the values are zero to continue
             
-            if (fabs(ax) < RESET_THRESHOLD && fabs(ay) < RESET_THRESHOLD) {
+            if (fabs(ax) < RESET_THRESHOLD && fabs(ay) < RESET_THRESHOLD) { //sets the condition when the device is flat and sets motion_action_taken to false
                 motion_action_taken = false;
             }
 
-            if (!motion_action_taken && programState == STATE_INPUT) {
+            if (!motion_action_taken && programState == STATE_INPUT) { //if the motion_action_taken has not been taken AND program state is STATE_INPUT, this allows the code to progess to check which direction is taken nexty
 
-                if (ax > TILT_THRESHOLD) {
-                    int len = strlen(currentMorseSequence);
+                if (ax > TILT_THRESHOLD) { //when turning the device right (going over the threshold)
+                    int len = strlen(currentMorseSequence); //count how many characters are in the currentMorseSequence
                     
-                    programState = STATE_DISPLAY;
-                    motion_action_taken = true;
+                    programState = STATE_DISPLAY; //sets to state to STATE_DISPLAY
+                    motion_action_taken = true; //and motion_action_taken to true, so it can't detect the motion more than once and requires it to be returned to flat
                     
-                    buzzer_play_tone(1000, 80); 
-                    vTaskDelay(pdMS_TO_TICKS(100));
                     buzzer_play_tone(1000, 80);
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                    buzzer_play_tone(1000, 80); //beep
 
                 }
 
 
-                else if (ax < -TILT_THRESHOLD) {
+                else if (ax < -TILT_THRESHOLD) { //when turning the device left (going over the threshold but negative = opposite side)
                     int len = strlen(currentMorseSequence);
                     
                     if (len < MORSE_MAX_LEN - 3) {                   
-                        programState = STATE_TRANSLATE;
+                        programState = STATE_TRANSLATE; //sets the state to STATE_TRANSLATE to activate a function in TransLateTask
                         
                         buzzer_play_tone(700, 80); 
                         vTaskDelay(pdMS_TO_TICKS(100));
-                        buzzer_play_tone(700, 80);
+                        buzzer_play_tone(700, 80); //beep
                     }
                     
 
@@ -159,14 +159,14 @@ static void TranslateTask(void *arg) {
 
 static void DisplayTask(void *arg) {
     (void)arg;
-    for (;;) {
-        if (programState == STATE_DISPLAY) {
-            write_text_xy(0, 0, translatedMessage);
+    for (;;) { //loops forever
+        if (programState == STATE_DISPLAY) { //if gotten STATE_DISPLAY state from ICM sensor, this part can be progressed
+            write_text_xy(0, 0, translatedMessage); //sets the coordinates of text to (0, 0), (x, y) on display (left uppper corner)
             vTaskDelay(pdMS_TO_TICKS(100));
-            translatedMessage[0] = '\0';
+            translatedMessage[0] = '\0'; //resetting values
             currentMorseSequence[0] = '\0';
-            programState = STATE_INPUT;
-            vTaskDelay(pdMS_TO_TICKS(5000));
+            programState = STATE_INPUT; //return back to STATE_INPUT so another translate can be done
+            vTaskDelay(pdMS_TO_TICKS(5000)); //5 second delay to see the printed text on display before it is cleared
             clear_display(); 
         }
 
@@ -207,4 +207,6 @@ int main() {
 
     return 0;
 }
+
 // Developers: Joonas Hannula, Eemil Hyyppä, Santtu Mörsky
+
