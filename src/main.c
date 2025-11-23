@@ -18,8 +18,8 @@ extern void write_text_xy(int16_t x0, int16_t y0, const char *text);
 enum state { STATE_INPUT, STATE_TRANSLATE, STATE_DISPLAY};
 enum state programState = STATE_INPUT;
 
-char translatedMessage[MESSAGE_MAX_LEN] = "";
-char currentMorseSequence[MORSE_MAX_LEN] = "";
+char translatedMessage[MESSAGE_MAX_LEN] = ""; // Array where the current translated message is stored
+char currentMorseSequence[MORSE_MAX_LEN] = ""; // Array where the current inputted morse sequence is stored
 QueueHandle_t inputQueue;
 
 typedef struct {
@@ -27,7 +27,7 @@ typedef struct {
     char character;
 } MorseMapEntry;
 
-const MorseMapEntry morse_map[] = {
+const MorseMapEntry morse_map[] = { // Global list which operates as a databank for corresponding characters for each morse sequence
     {".-", 'A'}, {"-...", 'B'}, {"-.-.", 'C'}, {"-..", 'D'},
     {".", 'E'}, {"..-.", 'F'}, {"--.", 'G'}, {"....", 'H'},
     {"..", 'I'}, {".---", 'J'}, {"-.-", 'K'}, {".-..", 'L'},
@@ -127,31 +127,31 @@ static void TranslateTask(void *arg) {
     (void)arg;
     char singleChar = '\0';
 
-    for (;;) {
+    for (;;) { // TranslateTask is used only when the programState is on STATE_TRANSLATE
         if (programState == STATE_TRANSLATE) {
-            singleChar = '\0';
+            singleChar = '\0'; // Temporary variable for the translation
 
-            if (strlen(currentMorseSequence) == 0) {
-                singleChar = ' '; 
+            if (strlen(currentMorseSequence) == 0) { 
+                singleChar = ' ';  // First check if the sequence is empty, if it is then add a "space"
             } else {
-                for (int i = 0; morse_map[i].morse != NULL; i++) {
-                    if (strcmp(currentMorseSequence, morse_map[i].morse) == 0) {
-                        singleChar = morse_map[i].character;
+                for (int i = 0; morse_map[i].morse != NULL; i++) { //If the sequence is not empty, use stringcompare to find the matching morse from morse_map
+                    if (strcmp(currentMorseSequence, morse_map[i].morse) == 0) { 
+                        singleChar = morse_map[i].character; //Then put the value of singleChar to the corresponding character of the morse sequence
                         break;
                     }
                 }
-                if (singleChar == '\0') singleChar = '?';
+                if (singleChar == '\0') singleChar = '?'; // If the inputted morse is not on the list, throw an error and give singleChar the value of ?
             }
 
             int msg_len = strlen(translatedMessage);
-            if (msg_len < MESSAGE_MAX_LEN - 1) {
+            if (msg_len < MESSAGE_MAX_LEN - 1) { //Ensure that the current translatedMessage doesnt excede the max size
                 translatedMessage[msg_len] = singleChar;
-                translatedMessage[msg_len + 1] = '\0';
+                translatedMessage[msg_len + 1] = '\0'; //Add the current translated singleChar as the rightmost character to the translatedMessage array
                 printf("Käännetty: %s\n", translatedMessage);
             }
 
-            currentMorseSequence[0] = '\0';
-            programState = STATE_INPUT;
+            currentMorseSequence[0] = '\0'; // Clear the morse sequence for the next input
+            programState = STATE_INPUT; // Switch the program state back to STATE_INPUT
         }
         vTaskDelay(pdMS_TO_TICKS(50));
     }
@@ -207,3 +207,4 @@ int main() {
 
     return 0;
 }
+// Developers: Joonas Hannula, Eemil Hyyppä, Santtu Mörsky
