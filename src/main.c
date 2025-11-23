@@ -22,7 +22,7 @@ char translatedMessage[MESSAGE_MAX_LEN] = ""; // Array where the current transla
 char currentMorseSequence[MORSE_MAX_LEN] = ""; // Array where the current inputted morse sequence is stored
 QueueHandle_t inputQueue;
 
-typedef struct {
+typedef struct { //Defining the morse_map constructor
     const char *morse;
     char character;
 } MorseMapEntry;
@@ -136,7 +136,7 @@ static void TranslateTask(void *arg) {
             } else {
                 for (int i = 0; morse_map[i].morse != NULL; i++) { //If the sequence is not empty, use stringcompare to find the matching morse from morse_map
                     if (strcmp(currentMorseSequence, morse_map[i].morse) == 0) { 
-                        singleChar = morse_map[i].character; //Then put the value of singleChar to the corresponding character of the morse sequence
+                        singleChar = morse_map[i].character; //Then set the corresponding character for the morse sequence as the value of singleChar
                         break;
                     }
                 }
